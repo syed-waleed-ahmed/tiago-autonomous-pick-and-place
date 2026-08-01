@@ -108,12 +108,20 @@ lowered for transit.
 
 ![Approaching the place station](images/task3_place_station.png)
 
+### Cube 63 placed, returning for cube 582
+
+`Cube 63 detached` → arm lift → fold → torso lower → `Moving to next cube: 582` →
+`STATE: GOTO_PICK` → `Navigating to (1.23, -1.96)`. The navigation goal is the pick
+station pose recovered from marker 26, not a literal in the source.
+
+![Cube 63 placed, navigating back to the pick station](images/task3_cube63_placed.png)
+
 ### Both cubes placed
 
 `Cube 582 detached` → arm lift → fold → torso lower → `✓ All cubes placed successfully!`
-→ `TASK 3 COMPLETE.`
+→ `STATE: DONE` → `TASK 3 COMPLETE.`
 
-![Task 3 complete](images/task3_complete.png)
+![Task 3 completion log](images/task3_complete.png)
 
 ---
 

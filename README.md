@@ -87,7 +87,7 @@ INIT → LOCALIZE → GOTO_PICK → DISCOVER_CUBE → GRASP → GOTO_PLACE → P
 </tr>
 <tr>
 <td width="50%"><img src="docs/images/task3_grasp_cube63.png" alt="Cube grasped"/><br/><sub><b>Task 3</b> — cube 63 grasped and attached</sub></td>
-<td width="50%"><img src="docs/images/task3_complete.png" alt="Task 3 complete"/><br/><sub><b>Task 3</b> — both cubes placed, run complete</sub></td>
+<td width="50%"><img src="docs/images/task3_cube63_placed.png" alt="Cube placed, returning for the next"/><br/><sub><b>Task 3</b> — cube 63 placed, navigating back for cube 582</sub></td>
 </tr>
 </table>
 
