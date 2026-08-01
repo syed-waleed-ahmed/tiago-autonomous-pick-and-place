@@ -1,0 +1,6 @@
+# Keep LF endings — this code runs on Linux/ROS 2 and CRLF breaks `#!` shebangs.
+* text=auto eol=lf
+
+*.pgm binary
+*.png binary
+*.pdf binary

@@ -1,0 +1,39 @@
+# ROS 2 / colcon build artefacts
+build/
+install/
+log/
+devel/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Large media — presentations, demo videos, VM images
+*.pptx
+*.ppt
+*.mp4
+*.webm
+*.mkv
+*.avi
+*.mov
+*.ova
+*.ovf
+*.vdi
+*.vmdk
+*.zip
+*.tar
+*.tar.gz
+*.bag
+*.db3
+rosbag2_*/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

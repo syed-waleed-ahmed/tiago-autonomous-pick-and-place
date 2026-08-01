@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>tiago_exam</name>
+  <version>1.0.0</version>
+  <description>
+    Autonomous Mobile Robotics exam project (Group 26, University of Bologna):
+    SLAM mapping, ArUco-based autonomous navigation, and pick and place with
+    the TIAGo robot in Gazebo.
+  </description>
+  <maintainer email="syedwaleedahmed9@gmail.com">Group 26</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <!-- Simulation / robot bringup (provided by the course workspace) -->
+  <exec_depend>gazebo_plugins</exec_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo_ros2_control</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_pal</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>pal_gazebo_worlds</exec_depend>
+  <exec_depend>pal_gazebo_plugins</exec_depend>
+  <exec_depend>tiago_bringup</exec_depend>
+  <exec_depend>tiago_description</exec_depend>
+  <exec_depend>tiago_moveit_config</exec_depend>
+  <exec_depend>tiago_2dnav</exec_depend>
+
+  <!-- Used directly by the task nodes and launch files -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>aruco_ros</exec_depend>
+  <exec_depend>aruco_msgs</exec_depend>
+  <exec_depend>linkattacher_msgs</exec_depend>
+  <exec_depend>explore_lite</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
+  <exec_depend>nav2_map_server</exec_depend>
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python_orocos_kdl</exec_depend>
+  <exec_depend>topic_tools</exec_depend>
+  <exec_depend>rqt_image_view</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
