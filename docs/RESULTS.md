@@ -127,8 +127,7 @@ station pose recovered from marker 26, not a literal in the source.
 
 ## Requirement checklist
 
-Against the "General Recommendations" section of the
-[assignment](exam_project_specification.pdf):
+Against the "General Recommendations" section of the assignment:
 
 | Requirement | Status |
 |---|---|
@@ -137,7 +136,7 @@ Against the "General Recommendations" section of the
 | Gripper opening/closing clearly visible in simulation | ✅ real `FollowJointTrajectory` on the finger joints, 0.044 ↔ 0.030 m |
 | Reasonable end-effector/cube alignment before Link Attacher | ✅ alignment and descent precede `/ATTACHLINK` |
 | No modification of simulation friction/physics to avoid the plugin | ✅ untouched |
-| No hardcoded pick and place positions | ✅ all goals derived from live ArUco detections |
+| No hardcoded pick and place positions | ⚠️ partial — no map coordinates in the source; both station poses and the grasp pose are derived from live ArUco detections, but the release motion at the place station is a fixed joint script plus a 120° base rotation ([details](ARCHITECTURE.md#53-manipulation-sequence)) |
 | Cube order: ID 63 then ID 582 | ✅ `CUBE_SEQUENCE = [63, 582]` |
 | Map alignment verified from a random initial pose | ✅ AMCL covariance gate, trace above |
 

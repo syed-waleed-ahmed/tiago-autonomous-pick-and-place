@@ -1,0 +1,58 @@
+TIAGo — Autonomous Mapping, Navigation and Pick & Place
+Copyright 2025 Group 26, M.Sc. Automation Engineering, University of Bologna
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file.
+
+--------------------------------------------------------------------------------
+THIRD-PARTY CONTENT INCLUDED IN THIS REPOSITORY
+--------------------------------------------------------------------------------
+
+This repository contains files derived from or supplied by PAL Robotics S.L. as
+part of the university course's TIAGo workspace. They are redistributed here
+under the Apache License 2.0 and remain the copyright of their original authors.
+
+  tiago_exam/scripts/tuck_arm.py
+      Copyright (c) 2022 PAL Robotics S.L. All rights reserved.
+      Arm folding helper, used unmodified.
+
+  tiago_exam/launch/tiago_exam.launch.py
+  tiago_exam/launch/tiago_spawn.launch.py
+      Simulation bringup and robot spawn, supplied with the exam project by the
+      course instructor. Included because the task launch files include them.
+
+  tiago_exam/config/tiago.rviz
+  tiago_exam/config/wbc.rviz
+      RViz configurations from the upstream TIAGo packages.
+
+  tiago_exam/CMakeLists.txt
+  tiago_exam/package.xml
+      Derived from the upstream tiago_exam package manifest, modified for this
+      project's nodes and dependencies.
+
+--------------------------------------------------------------------------------
+ORIGINAL WORK BY GROUP 26
+--------------------------------------------------------------------------------
+
+  tiago_exam/scripts/task2_navigator.py
+  tiago_exam/scripts/task3_pick_place.py
+  tiago_exam/launch/task1_mapping.launch.py
+  tiago_exam/launch/task2_navigation.launch.py
+  tiago_exam/launch/task3_pick_place.launch.py
+  tiago_exam/config/aruco_params_26.yaml
+  tiago_exam/config/aruco_params_238.yaml
+  maps/  ·  docs/
+
+--------------------------------------------------------------------------------
+NOT INCLUDED
+--------------------------------------------------------------------------------
+
+The course assignment specification, lecture material and the group-specific
+Gazebo world file are the property of the course instructor and are not
+redistributed in this repository.
+
+Upstream projects this work depends on but does not vendor:
+
+  aruco_ros            https://github.com/pal-robotics/aruco_ros
+  m-explore-ros2       https://github.com/robo-friends/m-explore-ros2
+  IFRA_LinkAttacher    https://github.com/IFRA-Cranfield/IFRA_LinkAttacher
+  TIAGo workspace      https://github.com/ljuba1996/TiagoWorkspace

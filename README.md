@@ -25,8 +25,8 @@ teleoperation and no hardcoded coordinates.
 |---|---|
 | **Platform** | TIAGo — differential base, 7-DoF arm, parallel gripper, RGB-D head camera |
 | **Stack** | ROS 2 Humble · Gazebo Classic · Nav2 · SLAM Toolbox · `explore_lite` · `aruco_ros` |
-| **Environment** | `group26` — course-assigned Gazebo world |
-| **Language** | Python 3.10 (`rclpy`), ~1,800 lines across two task nodes |
+| **Environment** | `group26` — course-assigned Gazebo world (not redistributed) |
+| **Language** | Python 3.10 (`rclpy`), ~1,750 lines across two task nodes |
 
 ## Contents
 
@@ -37,6 +37,7 @@ teleoperation and no hardcoded coordinates.
 - [Running](#running)
 - [Design highlights](#design-highlights)
 - [Documentation](#documentation)
+- [Academic integrity](#academic-integrity)
 - [Authors and license](#authors-and-license)
 
 ---
@@ -130,8 +131,8 @@ Full gallery, per-task evidence and the requirement checklist:
 ├── docs/
 │   ├── ARCHITECTURE.md                     System design, state machines, ROS interfaces
 │   ├── RESULTS.md                          Full results gallery and requirement checklist
-│   ├── exam_project_specification.pdf      The assignment
 │   └── images/                             Screenshots from recorded runs
+├── NOTICE                                  Third-party attribution
 └── .github/workflows/ci.yml                Syntax and manifest checks
 ```
 
@@ -226,10 +227,14 @@ kill -9 <pid>
 
 ## Design highlights
 
-**No hardcoded positions.** Every navigation goal and arm target is computed at runtime.
-Station standoff poses are built with PyKDL as a 0.6 m offset along the detected marker's
-outward normal; cube grasp poses come straight from the cube detector in
-`base_footprint`. Nothing in the source assumes where anything is.
+**Stations and cubes are discovered, not hardcoded.** No map coordinate appears in the
+source. Both station poses are recovered from their ArUco markers — a PyKDL 0.6 m offset
+along the detected marker's outward normal gives the navigation goal — and the grasp
+pose is mapped from the cube's position in `base_footprint`. The one exception is the
+*release* motion at the place station: once the robot has navigated to the
+marker-derived standoff pose, it runs a fixed joint configuration plus a 120° base
+rotation to deposit the cube, rather than solving for the drop point. See
+[Known limitations](docs/ARCHITECTURE.md#7-known-limitations).
 
 **Convergence-gated localization.** Rather than waiting a fixed time for AMCL, the node
 gates on covariance (`cov_xy < 0.07`, `cov_yaw < 0.15`), spins for at least 2.5 rotations
@@ -268,17 +273,28 @@ driven through shell subprocesses inside a node.
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System diagram, launch sequencing, state machines, tuned parameters, full ROS interface tables, known limitations |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Annotated screenshots per task, measured convergence trace, requirement checklist, runtimes |
-| [`docs/exam_project_specification.pdf`](docs/exam_project_specification.pdf) | The original assignment |
+| [`NOTICE`](NOTICE) | Which files are original work and which come from PAL Robotics or the course |
 
 ---
+
+## Academic integrity
+
+This repository is a record of completed coursework, published after the exam as a
+portfolio piece. It is not a solution set for anyone currently taking the course — if
+that is you, work the problem yourself; the interesting parts of this project are exactly
+the ones you would lose by copying.
+
+The course assignment specification, the lecture slides and the group-specific Gazebo
+world are the instructor's material and are **not** redistributed here. The
+[Setup](#setup) section points at the public upstream repositories instead. Anyone
+reproducing this work needs their own copy of the course material.
 
 ## Authors and license
 
 **Group 26** — M.Sc. Automation Engineering, University of Bologna.
 Course: Autonomous Mobile Robotics, Prof. Alessio Caporali (DEI–LAR).
 
-Code in `tiago_exam/` is released under the **Apache License 2.0**, matching the upstream
-PAL Robotics TIAGo packages it builds on. See [`LICENSE`](LICENSE).
-
-The assignment PDF in `docs/` is course material by Prof. Alessio Caporali and is
-included for reference only.
+Original work in this repository is released under the **Apache License 2.0**, matching
+the upstream PAL Robotics TIAGo packages it builds on. Some files in `tiago_exam/` are
+PAL Robotics or course-supplied code redistributed under the same licence —
+[`NOTICE`](NOTICE) lists exactly which. See [`LICENSE`](LICENSE) for the full terms.

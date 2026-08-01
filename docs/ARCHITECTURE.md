@@ -1,8 +1,7 @@
 # Architecture
 
 Technical design of the three task pipelines. See [`RESULTS.md`](RESULTS.md) for the
-recorded outcomes and the [assignment PDF](exam_project_specification.pdf) for the
-original requirements.
+recorded outcomes.
 
 ---
 
@@ -14,7 +13,7 @@ The assignment sets three hard constraints that shaped every decision:
 |---|---|
 | *"3 launch files to launch each of the 3 tasks"* | Each task is one self-contained launch file that brings up simulation, navigation, perception and the task node. |
 | *"Use ROS functionalities as they are intended… no calling ROS topics or services as subprocesses within another node"* | All node-internal communication uses publishers/subscribers, action clients and service clients. `ExecuteProcess` appears only in launch files, where it is the intended mechanism. |
-| *"The use of hardcoded positions for pick and place will be negatively evaluated"* | Every navigation goal and every arm target is derived at runtime from ArUco detections transformed through the TF tree. No map coordinates are baked into the source. |
+| *"The use of hardcoded positions for pick and place will be negatively evaluated"* | No map coordinate appears in the source. Both station poses and the grasp pose are derived at runtime from ArUco detections through the TF tree. The release motion at the place station is the one open-loop exception — see [§5.3](#53-manipulation-sequence) and [§7](#7-known-limitations). |
 
 A fourth, self-imposed principle: **the nodes must not assume the `group26` world.**
 Patrol viewpoints are sampled from the live occupancy grid, and station poses come from
@@ -278,11 +277,39 @@ Joint groups are driven through four separate `FollowJointTrajectory` action cli
 | Navigating | 0.10 m | −0.35 rad | closed |
 | Cube search | 0.20 m | −0.55 rad | — |
 | Grasp | 0.20 m | −0.55 rad | 0.044 → 0.030 m |
-| Place | 0.20 m | −0.60 rad | 0.030 → 0.044 m |
+| Place | 0.20 m → 0.30 m | −0.60 rad | 0.030 → 0.044 m |
 
-`ARM_FOLD = [2.6, -1.5, 0.6, 2.0, 1.2, -1.39, 2.0]` is the transit pose;
-`BASE_REACH = [1.44, 0.50, -0.40, 1.20, 0.60, -0.30, 2.00]` is the pre-grasp pose from
-which the descent to the detected cube height is computed.
+Two reference joint configurations anchor the motions:
+
+```python
+ARM_FOLD   = [2.60, -1.50,  0.60, 2.00, 1.20, -1.39, 2.00]  # transit pose
+BASE_REACH = [1.44,  0.50, -0.40, 1.20, 0.60, -0.30, 2.00]  # nominal pre-grasp pose
+```
+
+**Pick — derived from the detection.** `_calculate_arm_position_from_cube()` maps the
+cube's `(x, y, z)` in `base_footprint` onto joints 1, 2, 3 and 5 through a clamped linear
+fit calibrated on the TIAGo arm, starting from `BASE_REACH`:
+
+```python
+arm_pos[0] = clamp(1.0 + (cx - 0.3) * 1.2,  0.8,  2.0)
+arm_pos[1] = clamp(0.3 +  cy * 1.2,        -0.5,  0.9)
+arm_pos[2] = clamp(-0.4 + cz * 0.3,        -0.6, -0.1)
+arm_pos[4] = clamp( 0.5 + cz * 0.2,         0.3,  0.7)
+```
+
+The arm then descends 0.05 rad on joint 3 to close on the cube. This is an **empirical
+mapping, not an inverse-kinematics solution** — MoveIt is launched for the simulation but
+is not used to plan the grasp. It is closed-loop on the detection and open-loop on the
+kinematics, which is why the clamps exist. If no cube pose is available the code falls
+back to `BASE_REACH`.
+
+**Place — open loop.** The release sequence does *not* solve for a drop point. Having
+navigated to the standoff pose derived from marker 238, the node runs a fixed script:
+`BASE_REACH` → descend by `PLACE_LOWER = −0.10` → raise torso to 0.30 m → **rotate the
+base 120° left** → open gripper → `DetachLink` → lift 0.10 → fold → lower torso. The
+120° rotation is what carries the cube over the place surface. This works because the
+standoff pose in front of the marker is repeatable, but it is the weakest part of the
+design — see [§7](#7-known-limitations).
 
 ### 5.4 Grasping
 
@@ -358,7 +385,22 @@ verdict in the log.
 - **Task 2 patrol sampling is stochastic.** With an unlucky viewpoint draw the discovery
   phase can take noticeably longer, though the 8-viewpoint, 2 m-spacing configuration
   covered the scenario reliably across our runs.
+- **The place motion is open loop.** Unlike the grasp, the release is a fixed joint
+  script plus a 120° base rotation rather than a pose solved from marker 238. It relies
+  on the marker-derived standoff pose being repeatable; a place surface at a different
+  height or depth than the exam scenario's would need the sequence retuned. Solving the
+  drop point from the marker, the way the standoff pose already is, is the obvious next
+  step.
+- **No inverse kinematics.** Grasp joint angles come from a clamped linear fit of the
+  cube position, calibrated empirically on this arm. MoveIt is available in the launch
+  configuration but is not used for planning, so the approach does not transfer to a
+  different manipulator.
 - **Cube grasping assumes a top-down approach** on a horizontal surface. Cubes on a
-  tilted or elevated surface outside the torso's 0.10–0.20 m range are not handled.
+  tilted or elevated surface outside the torso's 0.10–0.30 m range are not handled.
+- **The robot tipped over at the end of one recorded run**, after `TASK 3 COMPLETE` had
+  been logged, during the final arm fold with the torso raised. The task had already
+  succeeded, but the transit pose is evidently close to the stability limit with the
+  torso extended; folding before raising, or lowering the torso first, would remove the
+  risk.
 - **The reactive safety layer can fight Nav2's own recovery** in tight corners; the
   `MAX_CONSECUTIVE_EMERGENCIES = 3` counter exists to break that loop.
