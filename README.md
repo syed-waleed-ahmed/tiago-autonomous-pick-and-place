@@ -1,7 +1,7 @@
 <h1 align="center">TIAGo — Autonomous Mapping, Navigation and Pick &amp; Place</h1>
 
 <p align="center">
-  <em>Final project — Autonomous Mobile Robotics, M.Sc. Automation Engineering,<br/>
+  <em>Final project — Autonomous and Mobile Robotics, M.Sc. Automation Engineering,<br/>
   University of Bologna</em>
 </p>
 
@@ -19,7 +19,7 @@
 A **PAL Robotics TIAGo** robot that maps an unknown indoor environment on its own,
 recovers its position from a random start pose, finds the pick and place stations by
 looking for ArUco markers, and transports two cubes between them — end to end, with no
-teleoperation and no hardcoded coordinates.
+teleoperation and no map coordinates written into the source.
 
 | | |
 |---|---|
@@ -37,6 +37,7 @@ teleoperation and no hardcoded coordinates.
 - [Running](#running)
 - [Design highlights](#design-highlights)
 - [Documentation](#documentation)
+- [Challenges](#challenges)
 - [Academic integrity](#academic-integrity)
 - [Authors and license](#authors-and-license)
 
@@ -51,7 +52,11 @@ Frontier-based autonomous exploration builds a complete occupancy grid of the sc
 map is saved automatically. The arm is folded first so it does not intrude into the base
 laser's field of view and corrupt the map.
 
-**Output:** [`maps/map.pgm`](maps/map.pgm) + [`maps/map.yaml`](maps/map.yaml) — 5 cm/cell.
+Exploration is not stopped by a timer — it halts because every reachable frontier has
+been traversed, which is the strongest completeness claim the algorithm can make.
+
+**Output:** [`maps/map.pgm`](maps/map.pgm) + [`maps/map.yaml`](maps/map.yaml) —
+194 × 224 cells at 5 cm/cell.
 
 ### Task 2 — Localization and station discovery
 
@@ -69,12 +74,26 @@ INIT → LOCALIZE → DISCOVER_PICK → GOTO_PICK → DISCOVER_PLACE → GOTO_PL
 ### Task 3 — Pick and place
 
 Both cubes are transported from the pick station to the place station in the required
-order — **ID 63 first, then ID 582** (7 cm cubes, 7 cm markers). The cubes are located by
-a second, separately calibrated ArUco detector; the arm aligns, the gripper visibly
-closes, and the Gazebo Link Attacher makes the grasp rigid.
+order — **ID 63 first, then ID 582** (7 cm cubes, 7 cm markers). `INIT` loads the station
+poses Task 2 discovered; the cubes themselves are located by a second, separately
+calibrated ArUco detector; the arm aligns, the gripper visibly closes, and the Gazebo
+Link Attacher makes the grasp rigid.
 
 ```
 INIT → LOCALIZE → GOTO_PICK → DISCOVER_CUBE → GRASP → GOTO_PLACE → PLACE → (repeat) → DONE
+```
+
+The mission is written as a loop over a target list rather than a straight-line script,
+so the prescribed order is enforced by construction — the marker callback ignores every
+ID except the current target.
+
+### The three tasks form a chain
+
+Each task consumes the artefact the previous one produced, which is why they run in
+order:
+
+```
+Task 1 ──map.pgm / map.yaml──▶ Task 2 ──found_markers.yaml──▶ Task 3
 ```
 
 ---
@@ -131,6 +150,7 @@ Full gallery, per-task evidence and the requirement checklist:
 ├── docs/
 │   ├── ARCHITECTURE.md                     System design, state machines, ROS interfaces
 │   ├── RESULTS.md                          Full results gallery and requirement checklist
+│   ├── LESSONS.md                          Challenges encountered and how they were solved
 │   └── images/                             Screenshots from recorded runs
 ├── NOTICE                                  Third-party attribution
 └── .github/workflows/ci.yml                Syntax and manifest checks
@@ -273,7 +293,35 @@ driven through shell subprocesses inside a node.
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System diagram, launch sequencing, state machines, tuned parameters, full ROS interface tables, known limitations |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Annotated screenshots per task, measured convergence trace, requirement checklist, runtimes |
+| [`docs/LESSONS.md`](docs/LESSONS.md) | What went wrong during development and what we changed in response |
 | [`NOTICE`](NOTICE) | Which files are original work and which come from PAL Robotics or the course |
+
+---
+
+## Challenges
+
+The problems worth reading about, with the full write-up in
+[`docs/LESSONS.md`](docs/LESSONS.md):
+
+**Most early failures were plumbing, not algorithms.** Nav2 subscribes to `/odom`; TIAGo
+publishes on `/mobile_base_controller/odom`. Nothing crashed — the robot simply never
+localised. Verifying the TF tree and topic graph before touching a single algorithm
+parameter would have saved days.
+
+**Perceptual aliasing has no filtering solution.** In symmetric corridors the laser scan
+looks the same from several poses, so the information needed to disambiguate is not
+there. The only cure is motion, which is why `LOCALIZE` drives and rotates rather than
+waiting.
+
+**Perception accuracy is task-relative.** The same ArUco pipeline that comfortably handles
+a 25 cm station marker is marginal for a 7 cm cube marker at grasping tolerance — which
+is what forced the second, separately calibrated detector.
+
+**Planner aborts are normal.** Nav2 intermittently fails to plan and cancels goals.
+Designing retries around that, instead of treating it as fatal, is why the runs finish.
+
+**Simulation throughput is a design constraint.** At a real-time factor near 0.65,
+iteration speed rather than ideas became the limiting factor on the manipulation work.
 
 ---
 
@@ -291,8 +339,14 @@ reproducing this work needs their own copy of the course material.
 
 ## Authors and license
 
-**Group 26** — M.Sc. Automation Engineering, University of Bologna.
-Course: Autonomous Mobile Robotics, Prof. Alessio Caporali (DEI–LAR).
+**Group 26** — M.Sc. Automation Engineering, University of Bologna:
+
+- Syed Waleed Ahmed
+- Habiba Rehman
+- Osama Khan
+
+Course: Autonomous and Mobile Robotics — Prof. Gianluca Palli and
+Prof. Alessio Caporali (DEI–LAR).
 
 Original work in this repository is released under the **Apache License 2.0**, matching
 the upstream PAL Robotics TIAGo packages it builds on. Some files in `tiago_exam/` are

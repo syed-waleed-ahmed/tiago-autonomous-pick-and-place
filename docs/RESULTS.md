@@ -1,8 +1,10 @@
 # Results
 
 Recorded outcomes for the three tasks in the `group26` simulation environment.
-All screenshots are from complete end-to-end runs — no manual intervention, no
-teleoperation, no hardcoded goals.
+All screenshots are from complete end-to-end runs — no manual intervention and no
+teleoperation. Navigation goals and grasp poses are derived from live ArUco detections;
+the one open-loop exception is documented in the
+[checklist](#requirement-checklist) below.
 
 | Task | Requirement | Outcome |
 |---|---|---|

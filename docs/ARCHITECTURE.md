@@ -23,6 +23,25 @@ marker normals — so the same code runs in any of the course worlds.
 
 ## 2. System overview
 
+### The artefact chain
+
+The three tasks are not independent demos — each one persists a file the next consumes,
+which is why they must be run in order:
+
+```mermaid
+graph LR
+    T1["Task 1<br/>autonomous mapping"] -->|"map.pgm + map.yaml<br/>194 × 224 @ 0.05 m/cell"| T2["Task 2<br/>localize + discover stations"]
+    T2 -->|"found_markers.yaml<br/>marker 26 and 238 poses"| T3["Task 3<br/>pick and place"]
+    T1 -.->|"same map, loaded by AMCL"| T3
+```
+
+`task3_pick_place.py` reads `~/tiago_ws/found_markers.yaml` during `INIT` and converts
+each entry into a PyKDL frame in `station_frames` — that is how it reaches both surfaces
+without ever detecting the 25 cm station markers itself. If the file is missing the node
+cannot reach the stations, so Task 2 must have completed successfully first.
+
+### Node and data flow
+
 ```mermaid
 graph TD
     subgraph SIM["Gazebo simulation"]
@@ -153,7 +172,7 @@ re-triggered, and a short 0.15 m/s translation nudge is applied — this breaks 
 symmetric-corridor ambiguity that a pure in-place spin cannot resolve. Hard timeout
 150 s.
 
-### 4.2 Patrol viewpoint sampling
+### 4.2 Patrol viewpoint sampling and active perception
 
 Rather than hardcoded search waypoints, candidate viewpoints are drawn from the live
 `/map` `OccupancyGrid`:
@@ -165,8 +184,22 @@ Rather than hardcoded search waypoints, candidate viewpoints are drawn from the 
 | Viewpoints generated | 8 |
 | Rejection-sampling attempts | up to 400 |
 
-At each viewpoint the robot performs a full `2π / 0.25 rad/s` sweep with the head pitched
-to −0.05 rad, giving the ArUco detector a complete panorama.
+Driving past a marker is not enough to see it — a marker mounted on a side surface never
+enters a forward-facing camera frame. The discovery cycle therefore combines base motion
+with **active head scanning**, in three phases per viewpoint:
+
+| Phase | Action | Duration |
+|---|---|---|
+| 0 | Full base spin at 0.25 rad/s, head pitched to −0.05 rad | `2π / 0.25 × 1.15` ≈ 29 s |
+| 1 | Head pans **+0.4 rad** left, hold | 1.5 s |
+| 2 | Head pans **−0.8 rad** right, hold | 1.5 s |
+
+The robot then navigates to the next sampled viewpoint and repeats. When the patrol list
+is exhausted it is resampled, so the search never terminates for lack of targets.
+
+> **Note.** The log strings for phases 1 and 2 read `Scanning: 45 degrees left` and
+> `Scanning: 90 degrees right`, but the commanded pan values are 0.4 rad (≈ 23°) and
+> −0.8 rad (≈ −46°). The messages are mislabelled; the behaviour is as tabulated above.
 
 ### 4.3 Detection filtering
 
@@ -228,7 +261,7 @@ marker_238:  { x: 1.2921, y: -7.1602, z: 0.0, qz:  0.8997, qw: -0.4365 }  # plac
 ```mermaid
 stateDiagram-v2
     [*] --> INIT
-    INIT --> LOCALIZE
+    INIT --> LOCALIZE: fold arm, load found_markers.yaml
     LOCALIZE --> GOTO_PICK: covariance converged
     GOTO_PICK --> DISCOVER_CUBE
     DISCOVER_CUBE --> GRASP: cube pose confirmed
@@ -266,6 +299,13 @@ Tighter than the station gates, because the arm commits to the result:
 | Consistent detections | 2 |
 | Within radius | 0.05 m |
 | Search timeout | 20 s |
+
+During `DISCOVER_CUBE` the base sweeps at ±0.35 rad/s with the head pitched to −0.55 rad
+until the target marker is seen consistently. The marker callback **ignores every ID
+except the current target**, so the prescribed order (63 before 582) is enforced by
+construction rather than by hand-sequencing: `CUBE_SEQUENCE = [63, 582]` is iterated, and
+after `PLACE` the index advances and the machine re-enters `GOTO_PICK` rather than
+finishing. The second cube runs the identical code path with a different target ID.
 
 ### 5.3 Manipulation sequence
 
